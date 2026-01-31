@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      width: 180px;
+      padding: 15px;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      color: #9d50bb;
+      opacity: 0.9;
+    }
+
+    .btn {
+      background: #6a11cb;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: 0.3s;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+    }
+
+    .btn:hover {
+      background: #2575fc;
+      transform: translateY(-2px);
+    }
+
+    .btn.stop {
+      background: #ea4335;
+      box-shadow: 0 4px 15px rgba(234, 67, 53, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #555;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .status-active {
+      background: #2ecc71;
+      box-shadow: 0 0 8px #2ecc71;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Cosmic Stress</h2>
+    <button id="meet-btn" class="btn">Start Detection</button>
+    <div style="font-size: 10px; color: #666;">
+      <span id="status-dot" class="status-dot"></span>
+      <span id="status-text">Inactive</span>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

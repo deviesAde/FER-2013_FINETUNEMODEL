@@ -1,0 +1,100 @@
+[
+    {
+        "label": "cv2",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "cv2",
+        "description": "cv2",
+        "detail": "cv2",
+        "documentation": {}
+    },
+    {
+        "label": "numpy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "numpy",
+        "description": "numpy",
+        "detail": "numpy",
+        "documentation": {}
+    },
+    {
+        "label": "tensorflow",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tensorflow",
+        "description": "tensorflow",
+        "detail": "tensorflow",
+        "documentation": {}
+    },
+    {
+        "label": "load_model",
+        "importPath": "tensorflow.keras.models",
+        "description": "tensorflow.keras.models",
+        "isExtraImport": true,
+        "detail": "tensorflow.keras.models",
+        "documentation": {}
+    },
+    {
+        "label": "preprocess_face",
+        "kind": 2,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "def preprocess_face(face_roi):\n    \"\"\"Preprocess face ROI untuk model\"\"\"\n    # Convert ke grayscale jika perlu\n    if len(face_roi.shape) == 3:\n        face_gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)\n    else:\n        face_gray = face_roi\n    # Resize ke 48x48 (sesuai model)\n    face_resized = cv2.resize(face_gray, (48, 48))\n    # Normalisasi",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "predict_stress",
+        "kind": 2,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "def predict_stress(face_input):\n    \"\"\"Predict stress level dari face ROI\"\"\"\n    predictions = model.predict(face_input, verbose=0)\n    predicted_class = class_names[np.argmax(predictions[0])]\n    confidence = np.max(predictions[0])\n    return predicted_class, confidence, predictions[0]\n# === 6. Main Webcam Loop ===\ndef run_webcam_detection():\n    print(\"🎥 Starting webcam...\")\n    print(\"📝 Controls:\")",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "run_webcam_detection",
+        "kind": 2,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "def run_webcam_detection():\n    print(\"🎥 Starting webcam...\")\n    print(\"📝 Controls:\")\n    print(\"   - Press 'q' to quit\")\n    print(\"   - Press 's' to save current frame\")\n    cap = cv2.VideoCapture(0)\n    # Set camera resolution\n    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)\n    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)\n    saved_count = 0",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "model",
+        "kind": 5,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "model = load_model('model_stress4_finetuned.h5')  \n# === 2. Define Classes ===\nclass_names = ['focus', 'neutral', 'non_stress', 'stress']\nclass_colors = {\n    'focus': (255, 255, 0),    # Kuning\n    'neutral': (0, 255, 0),    # Hijau\n    'non_stress': (0, 165, 255),  # Orange\n    'stress': (0, 0, 255)      # Merah\n}\n# === 3. Load Face Detector ===",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "class_names",
+        "kind": 5,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "class_names = ['focus', 'neutral', 'non_stress', 'stress']\nclass_colors = {\n    'focus': (255, 255, 0),    # Kuning\n    'neutral': (0, 255, 0),    # Hijau\n    'non_stress': (0, 165, 255),  # Orange\n    'stress': (0, 0, 255)      # Merah\n}\n# === 3. Load Face Detector ===\nprint(\"🔍 Loading face detector...\")\nface_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "class_colors",
+        "kind": 5,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "class_colors = {\n    'focus': (255, 255, 0),    # Kuning\n    'neutral': (0, 255, 0),    # Hijau\n    'non_stress': (0, 165, 255),  # Orange\n    'stress': (0, 0, 255)      # Merah\n}\n# === 3. Load Face Detector ===\nprint(\"🔍 Loading face detector...\")\nface_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')\n# === 4. Fungsi Preprocessing ===",
+        "detail": "stress_webcam",
+        "documentation": {}
+    },
+    {
+        "label": "face_cascade",
+        "kind": 5,
+        "importPath": "stress_webcam",
+        "description": "stress_webcam",
+        "peekOfCode": "face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')\n# === 4. Fungsi Preprocessing ===\ndef preprocess_face(face_roi):\n    \"\"\"Preprocess face ROI untuk model\"\"\"\n    # Convert ke grayscale jika perlu\n    if len(face_roi.shape) == 3:\n        face_gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)\n    else:\n        face_gray = face_roi\n    # Resize ke 48x48 (sesuai model)",
+        "detail": "stress_webcam",
+        "documentation": {}
+    }
+]
