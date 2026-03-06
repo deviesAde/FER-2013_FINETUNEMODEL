@@ -4,20 +4,20 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 
 
-print("🔍 Loading stress detection model...")
+print("[INFO] Loading stress detection model...")
 model = load_model('model_stress4_finetuned.h5')  
 
 # === 2. Define Classes ===
 class_names = ['focus', 'neutral', 'non_stress', 'stress']
 class_colors = {
-    'focus': (255, 255, 0),    # Kuning
-    'neutral': (0, 255, 0),    # Hijau
-    'non_stress': (0, 165, 255),  # Orange
+    'focus': (0, 165, 255),    # Orange (BGR)
+    'neutral': (0, 255, 255),  # Kuning (BGR)
+    'non_stress': (0, 255, 0), # Hijau (BGR)
     'stress': (0, 0, 255)      # Merah
 }
 
 # === 3. Load Face Detector ===
-print("🔍 Loading face detector...")
+print("[INFO] Loading face detector...")
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 # === 4. Fungsi Preprocessing ===
@@ -51,8 +51,8 @@ def predict_stress(face_input):
 
 # === 6. Main Webcam Loop ===
 def run_webcam_detection():
-    print("🎥 Starting webcam...")
-    print("📝 Controls:")
+    print("[INFO] Starting webcam...")
+    print("[INFO] Controls:")
     print("   - Press 'q' to quit")
     print("   - Press 's' to save current frame")
     
@@ -67,7 +67,7 @@ def run_webcam_detection():
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("❌ Failed to grab frame")
+            print("[ERROR] Failed to grab frame")
             break
         
         # Convert ke grayscale untuk face detection
@@ -94,6 +94,7 @@ def run_webcam_detection():
             
            
             color = class_colors[predicted_class]
+            cortisol_label = "HIGH CORTISOL" if predicted_class == 'stress' else "LOW CORTISOL"
             
             cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
             
@@ -102,12 +103,24 @@ def run_webcam_detection():
             
            
             text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+            cortisol_size = cv2.getTextSize(cortisol_label, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)[0]
+            
+            # Draw background for original label
             cv2.rectangle(frame, (x, y-30), (x+text_size[0], y), color, -1)
             cv2.rectangle(frame, (x, y-30), (x+text_size[0], y), color, 2)
+            
+            # Draw background for Cortisol label (above original label)
+            cv2.rectangle(frame, (x, y-65), (x+cortisol_size[0], y-35), color, -1)
+            cv2.rectangle(frame, (x, y-65), (x+cortisol_size[0], y-35), color, 2)
+            
             
             # Put text
             cv2.putText(frame, text, (x, y-10), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                       
+            # Put Cortisol text
+            cv2.putText(frame, cortisol_label, (x, y-42), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
             
             
             bar_width = 80
@@ -153,15 +166,15 @@ def run_webcam_detection():
             saved_count += 1
             filename = f"stress_capture_{saved_count}.jpg"
             cv2.imwrite(filename, frame)
-            print(f"💾 Saved: {filename}")
+            print(f"[SAVE] Saved: {filename}")
     
     # Cleanup
     cap.release()
     cv2.destroyAllWindows()
-    print("👋 Webcam closed")
+    print("[INFO] Webcam closed")
 
 # === 7. Run Program ===
 if __name__ == "__main__":
-    print("🎯 REAL-TIME STRESS DETECTION")
+    print("[APP] REAL-TIME STRESS DETECTION")
     print("=" * 40)
     run_webcam_detection()

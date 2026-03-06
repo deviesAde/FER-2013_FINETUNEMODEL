@@ -26,5 +26,16 @@
                 "content.js"
             ]
         }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "public/*.png",
+                "public/*.jpg"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
     ]
 }

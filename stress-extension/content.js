@@ -4,6 +4,20 @@ let resultsMap = new Map();
 let pendingRequests = new Map();
 let videoScaleMap = new Map();
 
+let imageAssets = {
+  stress: new Image(),
+  neutral: new Image(),
+  focus: new Image(),
+  non_stress: new Image()
+};
+
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+  imageAssets.stress.src = chrome.runtime.getURL('public/stress.png');
+  imageAssets.neutral.src = chrome.runtime.getURL('public/neutral.png');
+  imageAssets.focus.src = chrome.runtime.getURL('public/focus.png');
+  imageAssets.non_stress.src = chrome.runtime.getURL('public/non_stress.png');
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "START_MEET_DETECTION") {
     startDetection();
@@ -15,11 +29,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     pendingRequests.delete(request.videoId);
     const scale = videoScaleMap.get(request.videoId) || 1;
     const scaledDetections = request.detections.map(det => {
-        let [x, y, w, h] = det.box;
-        return {
-            ...det,
-            box: [x / scale, y / scale, w / scale, h / scale]
-        };
+      let [x, y, w, h] = det.box;
+      return {
+        ...det,
+        box: [x / scale, y / scale, w / scale, h / scale]
+      };
     });
     resultsMap.set(request.videoId, scaledDetections);
     drawAllBoxes();
@@ -87,12 +101,12 @@ function captureAndSend(video, videoId) {
   const MAX_WIDTH = 480;
   const originalWidth = video.videoWidth;
   const originalHeight = video.videoHeight;
-  
+
   let scale = 1;
   if (originalWidth > MAX_WIDTH) {
     scale = MAX_WIDTH / originalWidth;
   }
-  
+
   const capWidth = Math.floor(originalWidth * scale);
   const capHeight = Math.floor(originalHeight * scale);
 
@@ -101,12 +115,12 @@ function captureAndSend(video, videoId) {
   capCanvas.height = capHeight;
   const ctx = capCanvas.getContext('2d');
   ctx.drawImage(video, 0, 0, capWidth, capHeight);
-  
+
   const imageData = capCanvas.toDataURL('image/jpeg', 0.5);
-  
+
   pendingRequests.set(videoId, now);
   videoScaleMap.set(videoId, scale);
-  
+
   chrome.runtime.sendMessage({ type: "STRESS_ANALYZE_IMAGE", image: imageData, videoId: videoId });
 }
 
@@ -116,6 +130,7 @@ function drawAllBoxes() {
   overlayCanvas.width = window.innerWidth;
   overlayCanvas.height = window.innerHeight;
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
   const videos = document.querySelectorAll('video');
   videos.forEach((video, index) => {
     const videoId = `video_${index}`;
@@ -124,23 +139,98 @@ function drawAllBoxes() {
       const rect = video.getBoundingClientRect();
       const ratioX = rect.width / video.videoWidth;
       const ratioY = rect.height / video.videoHeight;
+
       detections.forEach(det => {
         const [x, y, w, h] = det.box;
-        let color = '#00ff00';
-        if (det.label === 'stress') color = '#ff0000';
-        if (det.label === 'focus') color = '#ffff00';
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+
         const drawX = rect.left + (x * ratioX);
         const drawY = rect.top + (y * ratioY);
         const drawW = w * ratioX;
         const drawH = h * ratioY;
+
+        let boxColor = '#ffff00';
+        let bgColor = '#ffff00';
+        let textColor = '#000000';
+        let cortisolLabel = "LOW CORTISOL";
+
+        if (det.label === 'stress') {
+          boxColor = '#ff0000';
+          bgColor = '#ff0000';
+          textColor = '#ffffff';
+          cortisolLabel = "HIGH CORTISOL";
+        } else if (det.label === 'neutral') {
+          boxColor = '#ffff00';
+          bgColor = '#ffff00';
+          textColor = '#000000';
+          cortisolLabel = "LOW CORTISOL";
+        } else if (det.label === 'focus') {
+          boxColor = '#ffaa00';
+          bgColor = '#ffaa00';
+          textColor = '#000000';
+          cortisolLabel = "LOW CORTISOL";
+        } else if (det.label === 'non_stress') {
+          boxColor = '#00ff00';
+          bgColor = '#00ff00';
+          textColor = '#000000';
+          cortisolLabel = "LOW CORTISOL";
+        }
+
+        ctx.save();
+
+        ctx.strokeStyle = boxColor;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([]);
         ctx.strokeRect(drawX, drawY, drawW, drawH);
 
-        ctx.fillStyle = color;
-        ctx.font = 'bold 12px Arial';
-        const confPercent = Math.round(det.score * 100);
-        ctx.fillText(`${det.label.toUpperCase()} ${confPercent}%`, drawX, drawY - 5);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.strokeRect(drawX, drawY, drawW, drawH);
+
+        ctx.restore();
+
+        ctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+        const cortisolWidth = ctx.measureText(cortisolLabel).width;
+
+        ctx.shadowColor = boxColor;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(drawX - 5, drawY - 50, cortisolWidth + 15, 30);
+
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+        ctx.fillText(cortisolLabel, drawX, drawY - 30);
+
+        const confidenceText = `${det.label.toUpperCase()} ${Math.round(det.score * 100)}%`;
+        ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif';
+        const confWidth = ctx.measureText(confidenceText).width;
+
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(drawX - 3, drawY - 25, confWidth + 10, 22);
+
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif';
+        ctx.fillText(confidenceText, drawX, drawY - 10);
+
+        const img = imageAssets[det.label];
+        if (img && img.complete && img.naturalHeight > 0) {
+            const imgSize = 100;
+            const imgX = drawX + (drawW / 2) - (imgSize / 2);
+            const imgY = drawY - 50 - imgSize - 10;
+            ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+        }
+
+        ctx.beginPath();
+        ctx.fillStyle = boxColor;
+        ctx.arc(drawX + drawW - 5, drawY + drawH - 5, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(drawX + drawW - 5, drawY + drawH - 5, 5, 0, 2 * Math.PI);
+        ctx.stroke();
       });
     }
   });
