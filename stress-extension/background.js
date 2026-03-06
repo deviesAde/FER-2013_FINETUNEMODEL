@@ -17,7 +17,10 @@ async function analyzeMultiFace(data, tabId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ image: data.image, videoId: data.videoId })
         });
-        if (!response.ok) return;
+        if (!response.ok) {
+            chrome.tabs.sendMessage(tabId, { type: "RELEASE_PENDING", videoId: data.videoId }).catch(() => { });
+            return;
+        }
         const result = await response.json();
         const now = Date.now();
         chrome.tabs.sendMessage(tabId, { type: "UPDATE_RESULTS", videoId: result.videoId, detections: result.detections }).catch(() => { });
@@ -26,7 +29,9 @@ async function analyzeMultiFace(data, tabId) {
         if (result.detections.length > 0) {
             chrome.runtime.sendMessage({ type: "STRESS_RESULT", data: result.detections[0] }).catch(() => { });
         }
-    } catch (error) { }
+    } catch (error) {
+        chrome.tabs.sendMessage(tabId, { type: "RELEASE_PENDING", videoId: data.videoId }).catch(() => { });
+    }
 }
 
 function updateStressHistory(videoId, detections, now) {

@@ -1,6 +1,8 @@
 let detectionInterval = null;
 let overlayCanvas = null;
 let resultsMap = new Map();
+let pendingRequests = new Map();
+let videoScaleMap = new Map();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "START_MEET_DETECTION") {
@@ -10,8 +12,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     stopDetection();
     sendResponse({ status: "stopped" });
   } else if (request.type === "UPDATE_RESULTS") {
-    resultsMap.set(request.videoId, request.detections);
+    pendingRequests.delete(request.videoId);
+    const scale = videoScaleMap.get(request.videoId) || 1;
+    const scaledDetections = request.detections.map(det => {
+        let [x, y, w, h] = det.box;
+        return {
+            ...det,
+            box: [x / scale, y / scale, w / scale, h / scale]
+        };
+    });
+    resultsMap.set(request.videoId, scaledDetections);
     drawAllBoxes();
+  } else if (request.type === "RELEASE_PENDING") {
+    pendingRequests.delete(request.videoId);
   } else if (request.type === "SHOW_GROUP_STRESS_ALERT") {
     showStressAlert(request.ratio);
   }
@@ -45,7 +58,7 @@ function startDetection() {
     overlayCanvas.style.zIndex = '2147483647';
     document.body.appendChild(overlayCanvas);
   }
-  detectionInterval = setInterval(() => { processAllVideos(); }, 2000);
+  detectionInterval = setInterval(() => { processAllVideos(); }, 250);
   requestAnimationFrame(function loop() { if (detectionInterval) { drawAllBoxes(); requestAnimationFrame(loop); } });
 }
 
@@ -66,12 +79,34 @@ function processAllVideos() {
 }
 
 function captureAndSend(video, videoId) {
+  const now = Date.now();
+  if (pendingRequests.has(videoId)) {
+    if (now - pendingRequests.get(videoId) < 5000) return;
+  }
+
+  const MAX_WIDTH = 480;
+  const originalWidth = video.videoWidth;
+  const originalHeight = video.videoHeight;
+  
+  let scale = 1;
+  if (originalWidth > MAX_WIDTH) {
+    scale = MAX_WIDTH / originalWidth;
+  }
+  
+  const capWidth = Math.floor(originalWidth * scale);
+  const capHeight = Math.floor(originalHeight * scale);
+
   const capCanvas = document.createElement('canvas');
-  capCanvas.width = video.videoWidth;
-  capCanvas.height = video.videoHeight;
+  capCanvas.width = capWidth;
+  capCanvas.height = capHeight;
   const ctx = capCanvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, capCanvas.width, capCanvas.height);
-  const imageData = capCanvas.toDataURL('image/jpeg', 0.6);
+  ctx.drawImage(video, 0, 0, capWidth, capHeight);
+  
+  const imageData = capCanvas.toDataURL('image/jpeg', 0.5);
+  
+  pendingRequests.set(videoId, now);
+  videoScaleMap.set(videoId, scale);
+  
   chrome.runtime.sendMessage({ type: "STRESS_ANALYZE_IMAGE", image: imageData, videoId: videoId });
 }
 

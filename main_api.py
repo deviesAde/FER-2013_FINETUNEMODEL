@@ -34,10 +34,12 @@ async def analyze_frame(request: ImageRequest):
         frame = cv2.cvtColor(np.array(Image.open(io.BytesIO(base64.b64decode(encoded)))), cv2.COLOR_RGB2BGR)
         faces = face_cascade.detectMultiScale(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 1.1, 5, minSize=(30, 30))
         detections = []
-        for (x, y, w, h) in faces:
-            preds = model.predict(preprocess_face(frame[y:y+h, x:x+w]), verbose=0)
-            idx = np.argmax(preds[0])
-            detections.append({"label": class_names[idx], "score": float(preds[0][idx]), "box": [int(x), int(y), int(w), int(h)]})
+        if len(faces) > 0:
+            face_inputs = np.vstack([preprocess_face(frame[y:y+h, x:x+w]) for (x, y, w, h) in faces])
+            preds = model.predict(face_inputs, verbose=0)
+            for i, (x, y, w, h) in enumerate(faces):
+                idx = np.argmax(preds[i])
+                detections.append({"label": class_names[idx], "score": float(preds[i][idx]), "box": [int(x), int(y), int(w), int(h)]})
         return {"videoId": request.videoId, "detections": detections}
     except Exception as e: return {"videoId": request.videoId, "detections": []}
 
